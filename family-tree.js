@@ -117,6 +117,21 @@ function PrintFamilyTree(chosenPerson){
     return ChangeSelectedPerson(stringToPrint, chosenPerson);
 }
 
+function ChangeSelectedPerson(stringToPrint, chosenPerson){
+    let newId = parseInt(prompt(`${stringToPrint}\n` +
+        `Unesi ID osobe koju želite odabrati:\n` +
+        `(za odustajanje unesite 0 ili prazan unos)`));
+    if(!newId){
+        alert('Odustali ste.')
+        return chosenPerson;
+    }
+    if (familyTree.some(p => p.id === newId)) {
+        return familyTree.find(p => p.id === newId);
+    }
+    alert('Ne postoji osoba s tim ID-om! Molimo ponovite unos.');
+    return ChangeSelectedPerson(stringToPrint, chosenPerson);
+}
+
 function MainMenu(chosenPerson){
     switch(MainMenuOutput(chosenPerson)){
         case '1':
@@ -206,4 +221,347 @@ function PrintCurrentPersonChildren(person){
             stringToPrint += ` ${child.firstName} (ID: ${child.id}),`
         }
     return stringToPrint.slice(0, -1);
+}
+
+function EnterBasicInfo(person, choice){
+    if(!choice || !EnterBasicInfoCheck(person, choice)){
+        return;
+    }
+
+    let firstName = CheckName('ime');
+    if(!firstName){
+        return;
+    }
+    let lastName;
+    if(choice === 2 && !(lastName = CheckName('prezime'))){
+        return;
+    }
+    let sex = CheckSex();
+    if(!sex){
+        return;
+    }
+    let yearOfBirth = CheckYear(person, 'rođenja', choice);
+    if(!yearOfBirth){
+        alert('Odustali ste.');
+        return;
+    }
+    let yearOfDeath = CheckYear(person, 'smrti', choice, yearOfBirth);
+    if(yearOfDeath === null){
+        alert('Odustali ste.');
+        return;
+    }
+
+    if(choice === 1){
+        AddChild(person, firstName, sex, yearOfBirth, yearOfDeath);
+        return;
+    }
+    AddSpouse(person, firstName, lastName, sex, yearOfBirth, yearOfDeath);
+}
+
+function EnterBasicInfoCheck(person, choice){
+    if(choice === 1 && !person.spouse){
+        alert('Osoba ne može imati djecu jer nema supružnika!');
+        return false;
+    }
+    if(choice === 1 && person.sex === person.spouse.sex){
+        alert('Ne mogu se dodavati djeca istospolnim supružnicima!');
+        return false;
+    }
+    if(choice === 1 && person.sex === 'Žensko' && person.father){
+        alert('Ne mogu se dodavati djeca ženi koja se udala u drugu obitelj!');
+        return false;
+    }
+    if(choice === 2 && person.spouse){
+        alert('Osoba već ima supružnika!');
+        return false;
+    }
+    return true;
+}
+
+function AddNewMemberSubmenu(){
+    let choice = parseInt(prompt('Unesite broj:\n'+
+        '1 - Dodavanje djeteta trenutnoj osobi\n' +
+        '2 - Dodavanje supružnika trenutnoj osobi\n' +
+        '0 - Odustajanje'));
+    if(choice === 1 || choice === 2 || !choice){
+        return choice;
+    }
+    alert('Molimo unesite broj između 0 i 2!');
+    return AddNewMemberSubmenu();
+}
+
+function CheckName(choice){
+    let name = prompt(`Unesi ${choice}\n(za odustajanje unesite prazan unos):`);
+    if(!name){
+        alert('Odustali ste.')
+        return;
+    }
+    name.trim();
+    if(name.length < 3){
+        alert(`${choice.charAt(0).toUpperCase() + choice.slice(1)} ` +
+            `ne smije biti kraće od 3 znaka! Molimo ponovite unos.`);
+        return CheckName(choice);
+    }
+    if (/\d/.test(name)){
+        alert(`${choice.charAt(0).toUpperCase() + choice.slice(1)} `+
+            `ne smije sadržavati brojeve! Molimo ponovite unos.`);
+        return CheckName(choice);
+    }
+    return name;
+}
+
+function CheckSex(){
+    let enteredSex = prompt('Unesi spol (M ili Ž):\n' +
+        '(za odustajanje unesite prazan unos)');
+    if(!enteredSex){
+        alert('Odustali ste.')
+        return null;
+    }
+    enteredSex = enteredSex.trim().toUpperCase();
+    if(enteredSex != 'M' && enteredSex != 'Ž'){
+        alert('Nedopušten unos! Molimo unesite M ili Ž.');
+        return CheckSex();
+    }
+    return enteredSex === 'M' ? 'Muško' : 'Žensko';
+}
+
+function CheckYear(person, dateChoice, typeOfEntry, birthYear){
+    let year;
+    if(dateChoice === 'rođenja'){
+        year = prompt(`Unesite godinu rođenja\n` +
+            `(za odustajanje unesite prazan unos):`);
+    }
+    if(dateChoice === 'smrti'){
+        year = prompt(`Unesite godinu smrti\n` +
+            `(ako je osoba još živa unesite 0)\n` +
+            `(za odustajanje unesite prazan unos):`);
+    }
+    if(year === '0' && dateChoice === 'smrti'){
+        return year;
+    }
+    if(!year){
+        return null;
+    }
+    year = parseInt(year);
+    if(dateChoice === 'rođenja' &&
+        (!CheckYearWhenAddingChildsBirth(person, year, typeOfEntry)
+        || !CheckYearSpan(year))){
+            return CheckYear(person, dateChoice, typeOfEntry);
+    }
+    if(dateChoice === 'smrti'
+        && (!CheckIfDeathPrecedesBirth(year, birthYear)
+        || !CheckYearSpan(year))){
+            return CheckYear(person, dateChoice, typeOfEntry, birthYear);
+    }
+    return year;
+}
+
+function CheckYearWhenAddingChildsBirth(person, year, typeOfEntry){
+    if(person.yearOfDeath &&
+        person.yearOfDeath < year &&
+        (!person.spouse ||
+        person.spouse.yearOfDeath < year - 1)){
+            alert('Osoba koja je umrla određene godine ' +
+                `ne može imati ${typeOfEntry === 1 ? 'dijete' : 'supružnika'} ` + 
+                's godinom rođenja višom od godine svoje smrti!');
+            return false;
+    }
+    var condition = typeOfEntry === 1 && person.yearOfBirth >= year &&
+        person.spouse.yearOfBirth >= year;
+    if(condition){
+            alert('Djeca ne mogu biti starija od roditelja!');
+    }
+    return !condition;
+}
+
+function CheckIfDeathPrecedesBirth(year, birthYear){
+    year = parseInt(year);
+    let condition = birthYear > year;
+    if(condition){
+        alert('Godina smrti ne smije biti ranija od godine rođenja!');
+    }
+    return !condition;
+}
+
+function CheckYearSpan(year){
+    let condition = year < 1700 || year > new Date().getFullYear();
+    if(condition){
+        alert('Molimo unesite godinu između 1700. i trenutne!');
+    }
+    return !condition;
+}
+
+function AddChild(person, firstName, sex, yearOfBirth, yearOfDeath){
+    if(person.sex === 'Žensko'){
+        person = person.spouse;
+    }
+    let newChild = {id: parseInt(familyTree[familyTree.length - 1].id + 1),
+        firstName, lastName: person.lastName, sex, yearOfBirth, yearOfDeath,
+        mother: person.spouse, father: person, spouse:null, children:[]};
+
+    familyTree.push(newChild);
+    person.children.push(newChild);
+    person.spouse.children.push(newChild);
+}
+
+function AddSpouse(person, firstName, lastName, sex, yearOfBirth, yearOfDeath){
+    let newSpouse = {id: parseInt(familyTree[familyTree.length - 1].id + 1),
+        firstName, lastName, sex, yearOfBirth, yearOfDeath, mother:null,
+        father:null, spouse: person, children:[]};
+
+    familyTree.push(newSpouse);
+    person.spouse = newSpouse;
+}
+
+function EnterDeath(person){
+    if(person.yearOfDeath){
+        alert('Već je upisana smrt trenutne osobe!');
+        return;
+    }
+    if(!confirm('Jeste li sigurni da želite upisati smrt trenutne osobe?')){
+        return;
+    }
+    person.yearOfDeath = new Date().getFullYear();
+    alert('Smrt je upisana.')
+}
+
+function StatisticsSubmenu(person){
+    switch(StatisticsSubmenuOutput(person)){
+        case '1':
+            alert(`Vrhovni predak ` +
+                `(${familyTree.find(p => p.id === 1).firstName} ` +
+                `${familyTree.find(p => p.id === 1).lastName}) je ` +
+                `${NumberOfGenerationsSinceFirstAncestor(person, 0)} ` +
+                `razina iznad trenutne osobe`);
+            return StatisticsSubmenu(person);
+        case '2':
+            PrintAllSiblings(person);
+            return StatisticsSubmenu(person);
+        case '3':
+            GetAverageAgeOfASex();
+            return StatisticsSubmenu(person);
+        case '4':
+            PrintNameFrequency();
+            return StatisticsSubmenu(person);
+        case '0':
+            return;
+        default:
+            alert('Molimo unesite broj između 0 i 4!');
+            return StatisticsSubmenu(person);
+    }
+}
+
+function StatisticsSubmenuOutput(){
+    return prompt('Unesite broj:\n'+
+        '1 - Koliko razina predaka postoji od određenog ' +
+        'člana stabla do vrhovnog pretka\n' +
+        '2 - Ispis imena sve braće i sestara koju određeni član ima\n' +
+        '3 - Prosječna životna dob članova obitelji za pojedini spol\n' +
+        '4 - Tablica učestalosti imena u obitelji\n' +
+        '0 - Povratak');
+}
+
+function NumberOfGenerationsSinceFirstAncestor(person, numberOfGenerations){
+    if(person.id === 1 || person.id === 2){
+        return numberOfGenerations;
+    }
+    if(!person.father){
+        person = person.spouse;
+    }
+    return NumberOfGenerationsSinceFirstAncestor(person.father, 
+        ++numberOfGenerations);
+}
+
+function PrintAllSiblings(person){
+    if(!person.father){
+        alert('Osoba nema upisane braću i sestre!');
+        return;
+    }
+    let siblingsOutput = `Sva braća i sestre:\n`;
+    let siblings =  familyTree
+        .filter(p => p.father === person.father && p !== person);
+    if(!siblings.length){
+        alert('Osoba nema upisane braću i sestre!');
+        return;
+    }
+
+    for(let sibling of siblings){
+        if(sibling.sex === 'Muško'){
+            siblingsOutput += 'Brat ';
+        }
+        if(sibling.sex === 'Žensko'){
+            siblingsOutput += 'Sestra ';
+        }
+        siblingsOutput += `${sibling.firstName} (ID: ${sibling.id})\n`;
+    }
+    alert(siblingsOutput.slice(0, -1));
+}
+
+function GetAverageAgeOfASex(){
+    let totalAge = 0, totalNumberOfPeople = 0;
+    let chosenSex = CheckSex();
+    if(!chosenSex){
+        return;
+    }
+
+    let membersOfASex =  familyTree.filter(p => p.sex === chosenSex &&
+        (chosenSex === 'Muško' || (chosenSex === 'Žensko' && !p.spouse)));
+
+    if(!membersOfASex.length){
+        alert('Ne postoje članovi obitelji s odabranim spolom!')
+        return;
+    }
+
+    for(let person of membersOfASex){
+        totalNumberOfPeople++;
+        if(!person.yearOfDeath){
+            totalAge += new Date().getFullYear() - person.yearOfBirth;
+            continue;
+        }
+        totalAge += person.yearOfDeath - person.yearOfBirth;
+    }
+    alert(`Prosječna dob odabranog spola je ` +
+        `${(Math.round(parseFloat(totalAge / totalNumberOfPeople)
+        * 100) / 100).toFixed(2)} godina.`);
+}
+
+function PrintAGeneration(person, stringToPrint){
+    let generation = [];
+
+    for(let child of person.children){
+        stringToPrint += `${child.firstName} (${child.id})      `;
+        generation.push(child);
+
+        if(!child.spouse) continue;
+
+        stringToPrint = stringToPrint.slice(0, -5) +
+         `- ${child.spouse.firstName} (${child.spouse.id})      `;
+    }
+
+    stringToPrint += '\n';
+    for(let memberOfGeneration of generation){
+        if(!memberOfGeneration.children.length) continue;
+        stringToPrint = PrintAGeneration(memberOfGeneration, stringToPrint);
+    }
+    return stringToPrint;
+}
+
+function PrintNameFrequency(){
+    frequency = CalculateNameFrequency();
+
+    let stringToPrint = 'Tablica učestalosti imena:\n\n';
+     for(let name in frequency){
+         stringToPrint += `${name} : ${frequency[name]} ponavljanja\n`;
+     }
+    alert(stringToPrint);
+}
+
+function CalculateNameFrequency(){
+    let frequency = {};
+
+    for(let person of familyTree){
+        frequency[person.firstName] = frequency[person.firstName]
+            ? frequency[person.firstName] + 1 : 1;
+    }
+    return frequency;
 }
