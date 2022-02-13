@@ -347,16 +347,14 @@ function CheckSex(){
 }
 
 function CheckYear(person, dateChoice, typeOfEntry, birthYear){
-    let year;
-    if(dateChoice === 'rođenja'){
-        year = prompt(`Unesite godinu rođenja\n` +
-            `(za odustajanje unesite prazan unos):`);
-    }
-    if(dateChoice === 'smrti'){
-        year = prompt(`Unesite godinu smrti\n` +
-            `(ako je osoba još živa unesite 0)\n` +
-            `(za odustajanje unesite prazan unos):`);
-    }
+    let stringToPrint = dateChoice === 'rođenja' ?
+        `Unesite godinu rođenja` :
+        `Unesite godinu smrti\n` +
+        `(ako je osoba još živa unesite 0)`;
+
+    let year = prompt(`${stringToPrint}\n` +
+        `(za odustajanje unesite prazan unos):`);
+
     if(year === '0' && dateChoice === 'smrti'){
         return year;
     }
@@ -498,24 +496,26 @@ function PrintAllSiblings(person){
         alert('Osoba nema upisane braću i sestre!');
         return;
     }
-    let siblingsOutput = `Sva braća i sestre:\n`;
+    let siblingsOutput = `Sva braća i sestre:\n\n`;
     let siblings =  familyTree
         .filter(p => p.father === person.father && p !== person);
+
     if(!siblings.length){
         alert('Osoba nema upisane braću i sestre!');
         return;
     }
+    
+    alert(PutPrefixesToSiblingsOutput(siblings, siblingsOutput)
+        .slice(0, -1));
+}
 
+function PutPrefixesToSiblingsOutput(siblings, siblingsOutput){
     for(let sibling of siblings){
-        if(sibling.sex === 'Muško'){
-            siblingsOutput += 'Brat ';
-        }
-        if(sibling.sex === 'Žensko'){
-            siblingsOutput += 'Sestra ';
-        }
-        siblingsOutput += `${sibling.firstName} (ID: ${sibling.id})\n`;
+        siblingsOutput += 
+            (sibling.sex === 'Muško' ? 'Brat ' : 'Sestra ') +
+            `${sibling.firstName} (ID: ${sibling.id})\n`;
     }
-    alert(siblingsOutput.slice(0, -1));
+    return siblingsOutput;
 }
 
 function GetAverageAgeOfASex(){
