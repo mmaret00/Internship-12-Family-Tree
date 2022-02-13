@@ -117,6 +117,27 @@ function PrintFamilyTree(chosenPerson){
     return ChangeSelectedPerson(stringToPrint, chosenPerson);
 }
 
+function PrintAGeneration(person, stringToPrint){
+    let generation = [];
+
+    for(let child of person.children){
+        stringToPrint += `${child.firstName} (${child.id})      `;
+        generation.push(child);
+
+        if(!child.spouse) continue;
+
+        stringToPrint = stringToPrint.slice(0, -5) +
+         `- ${child.spouse.firstName} (${child.spouse.id})      `;
+    }
+
+    stringToPrint += '\n';
+    for(let memberOfGeneration of generation){
+        if(!memberOfGeneration.children.length) continue;
+        stringToPrint = PrintAGeneration(memberOfGeneration, stringToPrint);
+    }
+    return stringToPrint;
+}
+
 function ChangeSelectedPerson(stringToPrint, chosenPerson){
     let newId = parseInt(prompt(`${stringToPrint}\n` +
         `Unesi ID osobe koju želite odabrati:\n` +
@@ -169,21 +190,21 @@ function MainMenuOutput(chosenPerson){
 }
 
 function PrintCurrentPerson(person){
-    let stringToPrint = PrintCurrentPersonBasic(person);
+    let stringToPrint = PrintCurrentPersonBasicInfo(person);
     
     if(person.mother && person.father){
-        stringToPrint += PrintCurrentPersonParents(person);
+        stringToPrint += PrintCurrentPersonParentsInfo(person);
     }
     if(person.spouse){
-        stringToPrint += PrintCurrentPersonSpouse(person);
+        stringToPrint += PrintCurrentPersonSpouseInfo(person);
     }
     if(person.children.length){
-        stringToPrint += PrintCurrentPersonChildren(person);
+        stringToPrint += PrintCurrentPersonChildrenInfo(person);
     }
     return stringToPrint;
 }
 
-function PrintCurrentPersonBasic(person){
+function PrintCurrentPersonBasicInfo(person){
     let stringToPrint = 'Trenutno ste na osobi:\n' +
     `ID: ${person.id}, ${person.firstName}`;
     if(person.sex === 'Žensko' && person.spouse
@@ -201,13 +222,13 @@ function PrintCurrentPersonBasic(person){
     return stringToPrint;
 }
 
-function PrintCurrentPersonParents(person){
+function PrintCurrentPersonParentsInfo(person){
     return `\nMajka: ${person.mother.firstName} ` +
         `(ex ${person.mother.lastName}) (ID: ${person.mother.id}), ` +
         `Otac: ${person.father.firstName} (ID: ${person.father.id})`;
 }
 
-function PrintCurrentPersonSpouse(person){
+function PrintCurrentPersonSpouseInfo(person){
     let stringToPrint = `\nSupružnik: ${person.spouse.firstName} `;
     if(person.sex === 'Muško' && person.spouse.sex === 'Žensko'){
         stringToPrint += `(ex ${person.spouse.lastName}) `;
@@ -215,7 +236,7 @@ function PrintCurrentPersonSpouse(person){
     return stringToPrint + `(ID: ${person.spouse.id})`;
 }
 
-function PrintCurrentPersonChildren(person){
+function PrintCurrentPersonChildrenInfo(person){
     let stringToPrint = '\nDjeca:';
         for(let child of person.children){
             stringToPrint += ` ${child.firstName} (ID: ${child.id}),`
@@ -523,27 +544,6 @@ function GetAverageAgeOfASex(){
     alert(`Prosječna dob odabranog spola je ` +
         `${(Math.round(parseFloat(totalAge / totalNumberOfPeople)
         * 100) / 100).toFixed(2)} godina.`);
-}
-
-function PrintAGeneration(person, stringToPrint){
-    let generation = [];
-
-    for(let child of person.children){
-        stringToPrint += `${child.firstName} (${child.id})      `;
-        generation.push(child);
-
-        if(!child.spouse) continue;
-
-        stringToPrint = stringToPrint.slice(0, -5) +
-         `- ${child.spouse.firstName} (${child.spouse.id})      `;
-    }
-
-    stringToPrint += '\n';
-    for(let memberOfGeneration of generation){
-        if(!memberOfGeneration.children.length) continue;
-        stringToPrint = PrintAGeneration(memberOfGeneration, stringToPrint);
-    }
-    return stringToPrint;
 }
 
 function PrintNameFrequency(){
