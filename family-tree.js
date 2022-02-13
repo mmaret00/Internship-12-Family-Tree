@@ -254,25 +254,25 @@ function EnterBasicInfo(person, choice){
         return;
     }
     let lastName;
-    if(choice === 2 && !(lastName = CheckName('prezime'))){
+    if(choice === 'spouse' && !(lastName = CheckName('prezime'))){
         return;
     }
     let sex = CheckSex();
     if(!sex){
         return;
     }
-    let yearOfBirth = CheckYear(person, 'rođenja', choice);
+    let yearOfBirth = CheckYear(person, 'birth', choice);
     if(!yearOfBirth){
         alert('Odustali ste.');
         return;
     }
-    let yearOfDeath = CheckYear(person, 'smrti', choice, yearOfBirth);
+    let yearOfDeath = CheckYear(person, 'death', choice, yearOfBirth);
     if(yearOfDeath === null){
         alert('Odustali ste.');
         return;
     }
 
-    if(choice === 1){
+    if(choice === 'child'){
         AddChild(person, firstName, sex, yearOfBirth, yearOfDeath);
         return;
     }
@@ -280,19 +280,19 @@ function EnterBasicInfo(person, choice){
 }
 
 function EnterBasicInfoCheck(person, choice){
-    if(choice === 1 && !person.spouse){
+    if(choice === 'child' && !person.spouse){
         alert('Osoba ne može imati djecu jer nema supružnika!');
         return false;
     }
-    if(choice === 1 && person.sex === person.spouse.sex){
+    if(choice === 'child' && person.sex === person.spouse.sex){
         alert('Ne mogu se dodavati djeca istospolnim supružnicima!');
         return false;
     }
-    if(choice === 1 && person.sex === 'Žensko' && person.father){
+    if(choice === 'child' && person.sex === 'Žensko' && person.father){
         alert('Ne mogu se dodavati djeca ženi koja se udala u drugu obitelj!');
         return false;
     }
-    if(choice === 2 && person.spouse){
+    if(choice === 'spouse' && person.spouse){
         alert('Osoba već ima supružnika!');
         return false;
     }
@@ -300,16 +300,20 @@ function EnterBasicInfoCheck(person, choice){
 }
 
 function AddNewMemberSubmenu(){
-    let choice = parseInt(prompt('Unesite broj:\n'+
+    let choice = prompt('Unesite broj:\n'+
         '1 - Dodavanje djeteta trenutnoj osobi\n' +
         '2 - Dodavanje supružnika trenutnoj osobi\n' +
-        '0 - Odustajanje'));
-    if(choice === 1 || choice === 2 || !choice){
-        return choice;
+        '0 - Odustajanje');
+    if(choice === '0'){
+        return 0;
+    }
+    if(choice === '1' || choice === '2'){
+        return choice === '1' ? 'child' : 'spouse';
     }
     alert('Molimo unesite broj između 0 i 2!');
     return AddNewMemberSubmenu();
 }
+
 
 function CheckName(choice){
     let name = prompt(`Unesi ${choice}\n(za odustajanje unesite prazan unos):`);
@@ -347,7 +351,7 @@ function CheckSex(){
 }
 
 function CheckYear(person, dateChoice, typeOfEntry, birthYear){
-    let stringToPrint = dateChoice === 'rođenja' ?
+    let stringToPrint = dateChoice === 'birth' ?
         `Unesite godinu rođenja` :
         `Unesite godinu smrti\n` +
         `(ako je osoba još živa unesite 0)`;
@@ -355,19 +359,19 @@ function CheckYear(person, dateChoice, typeOfEntry, birthYear){
     let year = prompt(`${stringToPrint}\n` +
         `(za odustajanje unesite prazan unos):`);
 
-    if(year === '0' && dateChoice === 'smrti'){
+    if(year === '0' && dateChoice === 'death'){
         return year;
     }
     if(!year){
         return null;
     }
     year = parseInt(year);
-    if(dateChoice === 'rođenja' &&
+    if(dateChoice === 'birth' &&
         (!CheckYearWhenAddingChildsBirth(person, year, typeOfEntry)
         || !CheckYearSpan(year))){
             return CheckYear(person, dateChoice, typeOfEntry);
     }
-    if(dateChoice === 'smrti'
+    if(dateChoice === 'death'
         && (!CheckIfDeathPrecedesBirth(year, birthYear)
         || !CheckYearSpan(year))){
             return CheckYear(person, dateChoice, typeOfEntry, birthYear);
@@ -381,11 +385,11 @@ function CheckYearWhenAddingChildsBirth(person, year, typeOfEntry){
         (!person.spouse ||
         person.spouse.yearOfDeath < year - 1)){
             alert('Osoba koja je umrla određene godine ' +
-                `ne može imati ${typeOfEntry === 1 ? 'dijete' : 'supružnika'} ` + 
+                `ne može imati ${typeOfEntry === 'child' ? 'dijete' : 'supružnika'} ` + 
                 's godinom rođenja višom od godine svoje smrti!');
             return false;
     }
-    var condition = typeOfEntry === 1 && person.yearOfBirth >= year &&
+    var condition = typeOfEntry === '1' && person.yearOfBirth >= year &&
         person.spouse.yearOfBirth >= year;
     if(condition){
             alert('Djeca ne mogu biti starija od roditelja!');
