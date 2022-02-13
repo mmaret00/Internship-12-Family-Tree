@@ -452,7 +452,7 @@ function StatisticsSubmenu(person){
             alert(`Vrhovni predak ` +
                 `(${familyTree.find(p => p.id === 1).firstName} ` +
                 `${familyTree.find(p => p.id === 1).lastName}) je ` +
-                `${NumberOfGenerationsSinceFirstAncestor(person, 0)} ` +
+                `${GetNumberOfGenerationsSinceFirstAncestor(person, 0)} ` +
                 `razina iznad trenutne osobe`);
             return StatisticsSubmenu(person);
         case '2':
@@ -482,14 +482,14 @@ function StatisticsSubmenuOutput(){
         '0 - Povratak');
 }
 
-function NumberOfGenerationsSinceFirstAncestor(person, numberOfGenerations){
+function GetNumberOfGenerationsSinceFirstAncestor(person, numberOfGenerations){
     if(person.id === 1 || person.id === 2){
         return numberOfGenerations;
     }
     if(!person.father){
         person = person.spouse;
     }
-    return NumberOfGenerationsSinceFirstAncestor(person.father, 
+    return GetNumberOfGenerationsSinceFirstAncestor(person.father, 
         ++numberOfGenerations);
 }
 
