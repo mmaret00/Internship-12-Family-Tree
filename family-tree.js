@@ -271,6 +271,7 @@ function EnterBasicInfo(person, choice){
         alert('Odustali ste.');
         return;
     }
+    yearOfDeath = yearOfDeath === '0' ? null : yearOfDeath;
 
     if(choice === 'child'){
         AddChild(person, firstName, sex, yearOfBirth, yearOfDeath);
